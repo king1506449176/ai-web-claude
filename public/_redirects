@@ -1,0 +1,7 @@
+# SPA fallback. 200 = rewrite, address bar unchanged.
+# Deep links like /chat have no matching static file, so hand them to index.html
+# and let React Router take over.
+#
+# This does NOT swallow /api/chat: Cloudflare Pages does not apply _redirects to
+# requests handled by Functions -- Functions win. (See DEPLOY.md.)
+/*    /index.html   200

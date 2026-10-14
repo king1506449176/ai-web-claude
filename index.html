@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#EEF1F6" />
+    <meta name="description" content="莓莓 —— 随时在线的 AI 聊天伙伴" />
+    <title>莓莓 · AI 聊天伙伴</title>
+
+    <!--
+      首帧底色必须内联在这里，不能等 CSS / React。
+      否则会先白一帧（样式还没到），紧接着闪一帧聊天端的深紫
+      （body 的深色是全站默认），生产环境 JS 包更大，那段深紫会亮得更久。
+      这个脚本是同步的、在 head 里，跑在任何绘制之前。
+    -->
+    <script>
+      if (location.pathname.indexOf('/chat') === 0) {
+        document.documentElement.setAttribute('data-route', 'chat')
+      }
+    </script>
+    <!-- 这里的两个色值要和 index.css 的 --page-light / --chat-bg 保持一致 -->
+    <style>
+      html {
+        background: #eef1f6;
+        color-scheme: light;
+      }
+      html[data-route='chat'] {
+        background: #20232b;
+        color-scheme: dark;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

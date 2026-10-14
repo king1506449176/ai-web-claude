@@ -1,0 +1,270 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   设计令牌
+   ========================================================================== */
+:root {
+  --brand-1: #6366F1;
+  --brand-2: #8B5CF6;
+  --brand-3: #22D3EE;
+  --brand-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #22D3EE 130%);
+
+  /* 聊天端深色。刻意不做成纯黑/深空：底色太深会和落地页的浅色互相打架，
+     抬到"软炭黑"更耐看。改这里就够，组件都走 var()。 */
+  --chat-bg: #20232B;
+  --chat-bg-soft: #282C36;
+  --chat-bg-veil: rgba(32, 35, 43, 0.6);
+  --chat-text: #E8EDF7;
+  --chat-text-dim: #93A1B8;
+  --chat-border: rgba(255, 255, 255, 0.08);
+
+  /* 落地页浅色 */
+  --page-light: #EEF1F6;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* 底色挂在 html 上并按路由切换：落地页浅、聊天页深。
+   之前在 body 上写死 --chat-bg，落地页首屏会闪一帧深紫。
+   index.html 里有一份等价的内联样式兜住首帧（CSS 到达之前）。 */
+html {
+  background: var(--page-light);
+  color-scheme: light;
+}
+
+html[data-route='chat'] {
+  background: var(--chat-bg);
+  color-scheme: dark;
+}
+
+body {
+  /* 底色交给 html，body 保持透传，避免两处各写一份 */
+  background: transparent;
+  color: var(--chat-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.35);
+}
+
+/* 控件自己会画按下态，关掉移动端默认的灰色高亮，免得两套反馈叠在一起 */
+button,
+a,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ==========================================================================
+   动画
+   ========================================================================== */
+
+/* 极光背景漂移 */
+@keyframes aurora-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  33%  { transform: translate3d(6%, -4%, 0) scale(1.12); }
+  66%  { transform: translate3d(-5%, 5%, 0) scale(0.95); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.aurora-blob {
+  animation: aurora-drift 22s var(--ease-out-soft) infinite;
+  will-change: transform;
+}
+
+/* 消息入场：淡入 + 上浮 + 轻微缩放
+   260ms —— UI 动效须在 300ms 内；缩放起点 0.96 而非 0，避免"凭空冒出来" */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.msg-in {
+  animation: msg-in 0.26s var(--ease-out-soft) both;
+}
+
+/* 首屏错峰入场：位移 + 4px 模糊 + 淡入，300ms 收敛 */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.fade-up {
+  animation: fade-up 0.3s var(--ease-out-soft) both;
+}
+
+/* 打字指示器 */
+@keyframes dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30%           { transform: translateY(-5px); opacity: 1; }
+}
+.typing-dot {
+  animation: dot-bounce 1.3s var(--ease-out-soft) infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0.32s; }
+
+/* 流式输出光标 */
+@keyframes caret-blink {
+  0%, 45%   { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+.stream-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: currentColor;
+  animation: caret-blink 1s steps(1) infinite;
+}
+
+/* 图标状态切换（复制 → 已复制）
+   两张图标同时留在 DOM 里交叉淡入淡出；单张图标瞬切会「跳」一下。
+   缩放从 0.25 起步而不是 0，弹性为 0。 */
+.icon-swap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    opacity 0.3s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.3s cubic-bezier(0.2, 0, 0, 1),
+    filter 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+.icon-swap[data-shown='false'] {
+  opacity: 0;
+  transform: scale(0.25);
+  filter: blur(4px);
+}
+.icon-swap[data-shown='true'] {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+
+/* 在线点脉冲（落地页 Hero 复用） */
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+}
+.online-dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Reduced motion
+   要求是「更克制」而不是「关掉」：位移、缩放、模糊全部去掉，
+   保留透明度过渡，元素仍然是淡入而不是硬生生蹦出来。
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  /* 纯装饰的漂移，直接停 */
+  .aurora-blob { animation: none; }
+
+  /* 入场：去掉位移与缩放，只留淡入 */
+  .msg-in { animation: cross-fade 0.2s ease-out both; }
+  .fade-up { animation: cross-fade 0.2s ease-out both; }
+
+  /* 三点跳动改成透明度呼吸 */
+  .typing-dot { animation: dot-fade 1.4s ease-in-out infinite; }
+
+  /* 图标交叉淡入淡出：去掉缩放与模糊，只留透明度 */
+  .icon-swap { transition-property: opacity; }
+  .icon-swap[data-shown='false'] { transform: none; filter: none; }
+
+  /* 光标闪烁与在线点本来就只有透明度/阴影，保留但放缓 */
+  .online-dot { animation: none; }
+}
+
+@keyframes cross-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes dot-fade {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+
+/* ==========================================================================
+   质感
+   ========================================================================== */
+
+/* 胶片颗粒：统一两页的底子。静态纹理，不参与动画，
+   所以 reduced-motion 下无需降级。
+   feColorMatrix 先归零饱和度 —— 否则 feTurbulence 会吐彩色噪点，
+   和"单一色相族"的约束冲突。 */
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-repeat: repeat;
+  background-size: 160px 160px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   安全区（刘海 / 圆角 / Home Indicator）
+   index.html 开了 viewport-fit=cover：页面铺到物理屏幕边缘，状态栏和底部指示条
+   底下也是内容区。env() 给出需要避让的宽度；没开 cover 或没有刘海时求值为 0。
+
+   带数字后缀的那几个是「替代同名 Tailwind 工具类」用的（px-6 → safe-px-6）。
+   它们必须自己把基础间距算进去 —— 这段规则在 @tailwind utilities 之后，
+   单选择器同权重会直接盖掉 px-6，只写 env() 的话间距反而会归零。
+   前面留一行等值声明做降级：万一环境不认 env()，至少不会把间距一起丢掉。
+
+   注意 env() 是相对**视口**的，不是相对元素的。所以只给真正贴着屏幕某条边的
+   元素挂对应的方向 —— 比如侧栏贴的是左边，就只能给 safe-l，给 safe-x 会凭空
+   在它右侧塞进一道右刘海宽度。
+   ========================================================================== */
+.safe-t { padding-top: env(safe-area-inset-top); }
+.safe-b { padding-bottom: env(safe-area-inset-bottom); }
+.safe-l { padding-left: env(safe-area-inset-left); }
+.safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-pt-3 {
+  padding-top: 0.75rem;
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
+}
+.safe-pb-5 {
+  padding-bottom: 1.25rem;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+}
+.safe-px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-left: calc(1.5rem + env(safe-area-inset-left));
+  padding-right: calc(1.5rem + env(safe-area-inset-right));
+}
+
+/* ==========================================================================
+   滚动条
+   ========================================================================== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.35); background-clip: content-box; }
